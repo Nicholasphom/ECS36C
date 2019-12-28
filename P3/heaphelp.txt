@@ -1,0 +1,60 @@
+#include "json.hpp"
+#include <iostream>
+#include <fstream>
+#include "priorityqueue.h"
+
+int main(int argc, char **argv) {
+
+  std::ifstream file1;
+  file1.open(argv[1]);
+  nlohmann::json bhan;
+  if (file1.is_open()) {
+    file1 >> bhan;
+  }
+
+  std::size_t maxHeapSize = bhan["metadata"]["maxHeapSize"];
+  std::size_t numOperations = bhan["metadata"]["numOperations"];
+
+  std::size_t numIterated = 0;
+
+  PriorityQueue heap(maxHeapSize);
+
+  for (auto itr = bhan.cbegin(); itr != bhan.cend(); itr++) {
+    numIterated++;
+
+    if (bhan[itr.key()]["operation"] == "insert") {
+      heap.insert(static_cast<Key>(bhan[itr.key()]["key"]));
+    } else if (bhan[itr.key()]["operation"] == "removeMin") {
+      heap.removeMin();
+    }
+
+    if (numIterated == numOperations) { break; }
+  }
+
+  nlohmann::json result;
+
+  for (size_t i = 1; i <= heap.size(); i++) {
+
+    std::string pos = std::to_string(i);
+    result[pos]["key"] = heap.getKeyValue(i);
+
+    if (2 * i <= heap.size()) {
+      result[pos]["leftChild"] = std::to_string(2 * i);
+    }
+    if (2 * i + 1 <= heap.size()) {
+      result[pos]["rightChild"] = std::to_string(2 * i + 1);
+    }
+    if (i != 1) {
+      result[pos]["parent"] = std::to_string(i / 2);
+    }
+    result[pos]["value"] = heap.getValue(i);
+  }
+
+  result["metadata"]["maxHeapSize"] = maxHeapSize;
+  result["metadata"]["numOperations"] = numOperations;
+  result["metadata"]["size"] = heap.size();
+
+  std::cout << result.dump(2);
+
+  return 0;
+}

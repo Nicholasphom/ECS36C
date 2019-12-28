@@ -1,0 +1,47 @@
+#ifndef _PRIORITYQUEUE_H_
+#define _PRIORITYQUEUE_H_
+
+#include <vector>
+#include <utility>
+#include "json.hpp"
+
+typedef double                  Key;
+typedef std::pair<int, int>     Value;
+typedef std::pair<Key, Value>   KeyValuePair;
+
+class PriorityQueue {
+ public:
+  PriorityQueue(std::size_t max_nodes);
+  void insert(Key k);
+  void insert(KeyValuePair kv);
+  KeyValuePair min();
+  KeyValuePair removeMin();
+  void removeNode(size_t i);
+  bool isEmpty() const;
+  size_t size() const;
+  nlohmann::json JSON() const;
+  Key getKeyValue(size_t i);
+  Value getValue(size_t i );
+
+ private:
+  void heapifyUp(size_t i);
+  void heapifyDown(size_t i);
+
+  Key getKey(size_t i);
+
+  size_t getParentIndex(size_t i) { return i / 2; }
+  size_t getLeftChildIndex(size_t i) { return 2 * i; }
+  size_t getRightChildIndex(size_t i) { return 2 * i + 1; }
+  bool hasParent(size_t i) { return getParentIndex(i) >= 1; }
+  bool hasLeftChild(size_t i) { return getLeftChildIndex(i) < size(); }
+  bool hasRightChild(size_t i) { return getRightChildIndex(i) < size(); }
+  void swap(size_t i, size_t j);
+
+  std::vector<KeyValuePair>   nodes_;
+  size_t                      max_size_;
+  size_t                      size_;
+
+  const static size_t         ROOT = 1;
+};  // class PriorityQueue
+
+#endif  // _PRIORITYQUEUE_H_

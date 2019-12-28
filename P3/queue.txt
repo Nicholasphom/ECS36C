@@ -1,0 +1,120 @@
+#include <iostream>
+#include "json.hpp"
+
+#include "priorityqueue.h"
+
+PriorityQueue::PriorityQueue(std::size_t max_size) :
+    nodes_(max_size + 1, KeyValuePair()),
+    max_size_(max_size),
+    size_(0) {
+}
+
+void PriorityQueue::insert(Key k) {
+  insert(std::make_pair(k, std::make_pair(0, 0)));
+}
+
+void PriorityQueue::insert(KeyValuePair kv) {
+  if (nodes_.size() - 1 <= size_) {
+    nodes_.push_back(kv);
+  } else {
+    nodes_.at(size_ + 1) = kv;
+  }
+  ++size_;
+  heapifyUp(size_);
+}
+
+KeyValuePair PriorityQueue::min() {
+  return nodes_.at(ROOT);
+}
+
+KeyValuePair PriorityQueue::removeMin() {
+  KeyValuePair min = this->min();
+  removeNode(ROOT);
+  return min;
+}
+
+bool PriorityQueue::isEmpty() const {
+  return size() == 0;
+}
+
+size_t PriorityQueue::size() const {
+  return size_;
+}
+
+nlohmann::json PriorityQueue::JSON() const {
+  nlohmann::json result;
+  for (size_t i = 1; i <= size_; i++) {
+    nlohmann::json node;
+    KeyValuePair kv = nodes_[i];
+    node["key"] = kv.first;
+    node["value"] = kv.second;
+    if (i != ROOT) {
+      node["parent"] = std::to_string(i / 2);
+    }
+    if (2 * i <= size_) {
+      node["leftChild"] = std::to_string(2 * i);
+    }
+    if (2 * i + 1 <= size_) {
+      node["rightChild"] = std::to_string(2 * i + 1);
+    }
+    result[std::to_string(i)] = node;
+  }
+  result["metadata"]["max_size"] = max_size_;
+  result["metadata"]["size"] = size_;
+  return result;
+}
+
+void PriorityQueue::heapifyUp(size_t i) {
+  while (hasParent(i) && getKey(i) <= getKey(getParentIndex(i))) { // has parent and child is out of order (smaller)
+    auto parent = getParentIndex(i); // gets parent index
+    swap(i, parent);  // swaps two nodes
+    i = parent; // walk up heap
+  }
+}
+
+void PriorityQueue::heapifyDown(size_t i) {
+  while (hasLeftChild(i)) {
+    size_t smallerChildIndex;
+    if (hasRightChild(i) && getKey(getRightChildIndex(i)) < getKey(getLeftChildIndex(i))) {
+      smallerChildIndex = getRightChildIndex(i);
+} else {
+      smallerChildIndex = getLeftChildIndex(i);
+    }
+    //size_t smallerChildIndex = (hasRightChild(i) && getKey(getRightChildIndex(i)) < getKey(getLeftChildIndex(i)))
+     //                          ? getRightChildIndex(i) : getLeftChildIndex(i); // finds smaller child
+    if (getKey(i) <= getKey(smallerChildIndex)) {
+      break;
+    } else {
+      swap(i, smallerChildIndex);
+    }
+    i = smallerChildIndex;
+  }
+}
+
+void PriorityQueue::removeNode(size_t i) {
+  if (i == size()) { // last node
+    nodes_.pop_back(); // removes last node
+  } else {
+    swap(i, size()); // swap last node with node to be removed
+    nodes_.pop_back(); // delete the new last node
+    heapifyDown(i); // heapify down and re-order nodes
+  }
+  --size_;
+}
+
+Key PriorityQueue::getKey(size_t i) {
+  return nodes_.at(i).first;
+}
+void PriorityQueue::swap(size_t i, size_t j) {
+  KeyValuePair temp = nodes_.at(i);
+  nodes_.at(i) = nodes_.at(j);
+  nodes_.at(j) = temp;
+}
+
+Key PriorityQueue::getKeyValue(size_t i) {
+  return getKey(i);
+}
+
+Value PriorityQueue::getValue(size_t i ) {
+  return nodes_.at(i).second;
+}
